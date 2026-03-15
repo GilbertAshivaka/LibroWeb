@@ -265,7 +265,7 @@ async def record_portal_payment(
         amount=request.amount,
         currency="USD",
         payment_method=request.payment_method,
-        transaction_ref=request.reference,
+        transaction_id=request.reference,
         status="pending",
         notes=f"Customer submitted: {request.plan} plan"
     )

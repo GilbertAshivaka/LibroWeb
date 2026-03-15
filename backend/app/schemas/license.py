@@ -1,7 +1,7 @@
 """
 License schemas.
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing import Optional, Any
 from datetime import date, datetime
 
@@ -15,6 +15,8 @@ class LicenseBase(BaseModel):
 class LicenseCreate(LicenseBase):
     """Schema for creating a license."""
     organization_id: int
+    max_activations: int = 1
+    is_trial: bool = False
 
 
 class LicenseUpdate(BaseModel):
@@ -24,6 +26,34 @@ class LicenseUpdate(BaseModel):
     is_active: Optional[bool] = None
     is_revoked: Optional[bool] = None
     revoked_reason: Optional[str] = None
+
+
+class OrganizationBrief(BaseModel):
+    """Brief organization info for license response."""
+    id: int
+    name: str
+    organization_id: str
+    
+    class Config:
+        from_attributes = True
+
+
+class TierBrief(BaseModel):
+    """Brief tier info for license response."""
+    id: int
+    name: str
+    code: str
+    
+    class Config:
+        from_attributes = True
+    
+    @model_validator(mode='before')
+    @classmethod
+    def map_tier_fields(cls, data):
+        """Map SubscriptionTier model fields to brief response fields."""
+        if hasattr(data, 'tier_name'):
+            return {'id': data.id, 'name': data.tier_name, 'code': data.tier_code}
+        return data
 
 
 class LicenseResponse(BaseModel):
@@ -36,9 +66,14 @@ class LicenseResponse(BaseModel):
     expiry_date: date
     is_active: bool
     is_revoked: bool
+    is_trial: bool = False
     revoked_reason: Optional[str]
+    max_activations: int = 3
+    activation_count: int = 0
     created_at: datetime
     updated_at: datetime
+    organization: Optional[OrganizationBrief] = None
+    tier: Optional[TierBrief] = None
     
     class Config:
         from_attributes = True

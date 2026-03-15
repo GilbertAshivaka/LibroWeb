@@ -39,11 +39,12 @@ class LicenseService:
             license_key=license_key,
             tier_id=data.tier_id,
             expiry_date=data.expiry_date,
+            max_activations=data.max_activations,
+            is_trial=data.is_trial,
         )
         self.db.add(license)
         await self.db.flush()
-        await self.db.refresh(license)
-        return license
+        return await self.get_by_id(license.id)
     
     async def get_by_id(self, id: int) -> Optional[License]:
         """Get license by ID with relationships."""
@@ -114,8 +115,7 @@ class LicenseService:
             setattr(license, field, value)
         
         await self.db.flush()
-        await self.db.refresh(license)
-        return license
+        return await self.get_by_id(id)
     
     async def activate(
         self, 

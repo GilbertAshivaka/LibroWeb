@@ -60,7 +60,7 @@ class TierResponse(BaseModel):
     max_users: Optional[int]
     price_monthly: Optional[float]
     price_yearly: Optional[float]
-    features: Optional[dict]
+    features: Optional[list] = None
 
 
 @router.post("/register", response_model=RegistrationResponse)
@@ -95,10 +95,8 @@ async def register_organization(
     # Get tier based on plan
     tier_code_map = {
         "trial": "trial",
-        "starter": "basic",
         "basic": "basic",
-        "professional": "premium",
-        "enterprise": "premium"
+        "premium": "premium",
     }
     tier_code = tier_code_map.get(request.plan, "trial")
     
@@ -113,10 +111,10 @@ async def register_organization(
             tier_code=tier_code,
             tier_name=tier_code.title(),
             description=f"{tier_code.title()} plan",
-            max_users=3 if tier_code == "basic" else 10,
-            max_books=10000 if tier_code == "basic" else 100000,
-            monthly_price=29.99 if tier_code == "basic" else 79.99,
-            annual_price=299.99 if tier_code == "basic" else 799.99
+            max_users=1,
+            max_books=1000 if tier_code == "trial" else 10000 if tier_code == "basic" else 100000,
+            monthly_price=0 if tier_code == "trial" else 29.99 if tier_code == "basic" else 79.99,
+            annual_price=0 if tier_code == "trial" else 299.99 if tier_code == "basic" else 799.99
         )
         db.add(tier)
         await db.flush()
@@ -154,12 +152,10 @@ async def register_organization(
     # Generate license key
     license_key = f"LIBRO-{secrets.token_hex(4).upper()}-{secrets.token_hex(4).upper()}-{secrets.token_hex(4).upper()}-{secrets.token_hex(4).upper()}"
     
-    # Set expiry based on plan
-    is_trial = request.plan == "trial"
-    if is_trial:
-        expiry_date = datetime.utcnow() + timedelta(days=30)  # 30 day trial
-    else:
-        expiry_date = datetime.utcnow() + timedelta(days=365)  # 1 year
+    # All new registrations start with a 7-day trial period
+    # Full subscription is activated after payment is verified by admin
+    is_trial = True
+    expiry_date = datetime.utcnow() + timedelta(days=7)  # 7-day trial
     
     # Create license
     license = License(
@@ -167,7 +163,7 @@ async def register_organization(
         organization_id=organization.id,
         tier_id=tier.id,
         expiry_date=expiry_date,
-        max_activations=tier.max_users or 3,
+        max_activations=1,
         is_trial=is_trial,
         is_revoked=False
     )
@@ -211,29 +207,18 @@ async def get_public_tiers(db: AsyncSession = Depends(get_db)):
                 max_users=3,
                 price_monthly=29.99,
                 price_yearly=299.99,
-                features={"cataloging": True, "patron_management": True}
+                features=["Full catalog", "Circulation", "Patron management", "Basic reports", "Email support"]
             ),
             TierResponse(
                 id=2,
-                name="Professional",
+                name="Premium",
                 code="premium",
-                description="For medium libraries",
+                description="For growing libraries",
                 max_items=100000,
                 max_users=10,
                 price_monthly=79.99,
                 price_yearly=799.99,
-                features={"cataloging": True, "patron_management": True, "marc_support": True, "reports": True}
-            ),
-            TierResponse(
-                id=3,
-                name="Enterprise",
-                code="enterprise",
-                description="For large library networks",
-                max_items=-1,
-                max_users=-1,
-                price_monthly=199.99,
-                price_yearly=1999.99,
-                features={"cataloging": True, "patron_management": True, "marc_support": True, "reports": True, "api_access": True, "multi_branch": True}
+                features=["Full catalog", "Circulation", "Acquisitions", "MARC import/export", "Advanced reports", "Priority support"]
             )
         ]
     

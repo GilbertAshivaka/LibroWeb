@@ -77,19 +77,6 @@ export default function EmbedAnnouncementsPage() {
   
   return (
     <div className="min-h-screen bg-libro-cream-50">
-      {/* Header */}
-      <header className="bg-white border-b border-libro-warmgray-100 px-4 py-4 sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-libro-coral-400 to-libro-coral-500 rounded-xl flex items-center justify-center shadow-sm">
-            <Megaphone className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="font-semibold text-libro-warmgray-800">Announcements</h1>
-            <p className="text-xs text-libro-warmgray-500">Latest updates from Libro</p>
-          </div>
-        </div>
-      </header>
-      
       {/* Content */}
       <main className="max-w-2xl mx-auto p-4">
         {announcements.length === 0 ? (

@@ -26,9 +26,10 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     
-    # AI Proxy (Gemini)
-    GEMINI_API_KEY: Optional[str] = "AIzaSyDeX3uzyib-1mMGwj2ipNksUd-KF1ivL-g"
-    GEMINI_API_URL: str = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+    # AI Proxy (Groq)
+    GROQ_API_KEY: Optional[str] = None
+    GROQ_API_URL: str = "https://api.groq.com/openai/v1/chat/completions"
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
     
     # File Upload
     UPLOAD_DIR: str = "./uploads"

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { aiAPI } from '../../api'
 import { Send, Bot, User, Loader2, Sparkles, RefreshCw } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 
 export default function EmbedAIPage() {
   const [messages, setMessages] = useState([])
@@ -137,7 +138,13 @@ export default function EmbedAIPage() {
                   ? 'bg-red-50 text-red-700 rounded-tl-sm'
                   : 'bg-white text-libro-warmgray-700 shadow-sm rounded-tl-sm'
               }`}>
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                {message.role === 'assistant' ? (
+                  <div className="text-sm prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0">
+                    <ReactMarkdown>{message.content}</ReactMarkdown>
+                  </div>
+                ) : (
+                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                )}
               </div>
               <p className={`text-xs text-libro-warmgray-400 mt-1 ${
                 message.role === 'user' ? 'text-right' : ''
@@ -190,7 +197,7 @@ export default function EmbedAIPage() {
           </button>
         </form>
         <p className="text-xs text-center text-libro-warmgray-400 mt-2">
-          Powered by Gemini AI
+          Powered by Groq AI
         </p>
       </div>
     </div>

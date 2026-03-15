@@ -1,7 +1,8 @@
 """
 License router - handles activation and validation from Qt app.
 """
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.schemas.license import (
@@ -125,7 +126,6 @@ async def get_license(
     license = await license_service.get_by_id(license_id)
     
     if not license:
-        from fastapi import HTTPException, status
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="License not found"
@@ -148,10 +148,70 @@ async def update_license(
     license = await license_service.update(license_id, data)
     
     if not license:
-        from fastapi import HTTPException, status
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="License not found"
         )
     
+    return LicenseResponse.model_validate(license)
+
+
+class LicenseRenewRequest(BaseModel):
+    """Request to renew/extend a license."""
+    days: int
+
+
+@router.post("/{license_id}/revoke", response_model=LicenseResponse)
+async def revoke_license(
+    license_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: AdminUser = Depends(require_admin)
+):
+    """
+    Revoke a license (admin only).
+    """
+    license_service = LicenseService(db)
+    license = await license_service.get_by_id(license_id)
+    
+    if not license:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="License not found"
+        )
+    
+    license.is_revoked = True
+    license.is_active = False
+    await db.flush()
+    license = await license_service.get_by_id(license_id)
+    return LicenseResponse.model_validate(license)
+
+
+@router.post("/{license_id}/renew", response_model=LicenseResponse)
+async def renew_license(
+    license_id: int,
+    data: LicenseRenewRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: AdminUser = Depends(require_admin)
+):
+    """
+    Renew/extend a license by a number of days (admin only).
+    """
+    from datetime import date as date_type, timedelta
+    
+    license_service = LicenseService(db)
+    license = await license_service.get_by_id(license_id)
+    
+    if not license:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="License not found"
+        )
+    
+    # Extend from today or current expiry, whichever is later
+    base_date = max(license.expiry_date, date_type.today())
+    license.expiry_date = base_date + timedelta(days=data.days)
+    license.is_active = True
+    license.is_revoked = False
+    await db.flush()
+    license = await license_service.get_by_id(license_id)
     return LicenseResponse.model_validate(license)

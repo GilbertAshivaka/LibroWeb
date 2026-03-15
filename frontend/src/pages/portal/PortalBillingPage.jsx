@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import usePortalStore from '../../store/portalStore'
-import { portalAPI } from '../../api'
+import { portalAPI, publicAPI } from '../../api'
 import {
   BookOpen,
   ArrowLeft,
@@ -14,61 +14,11 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-const plans = [
-  {
-    id: 'basic',
-    name: 'Basic',
-    price: 299,
-    period: 'year',
-    features: [
-      'Up to 10,000 items',
-      '3 staff accounts',
-      'Basic cataloging',
-      'Patron management',
-      'Standard support'
-    ],
-    maxItems: 10000,
-    maxUsers: 3
-  },
-  {
-    id: 'professional',
-    name: 'Professional',
-    price: 799,
-    period: 'year',
-    popular: true,
-    features: [
-      'Up to 100,000 items',
-      '10 staff accounts',
-      'Advanced cataloging',
-      'MARC import/export',
-      'Reports & analytics',
-      'Priority support'
-    ],
-    maxItems: 100000,
-    maxUsers: 10
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    price: 1999,
-    period: 'year',
-    features: [
-      'Unlimited items',
-      'Unlimited staff accounts',
-      'Multi-branch support',
-      'API access',
-      'Custom integrations',
-      'Dedicated support',
-      'On-site training'
-    ],
-    maxItems: -1,
-    maxUsers: -1
-  }
-]
-
 export default function PortalBillingPage() {
   const navigate = useNavigate()
   const { customer, organization, license, fetchCustomerData } = usePortalStore()
+  const [plans, setPlans] = useState([])
+  const [isLoadingPlans, setIsLoadingPlans] = useState(true)
   const [selectedPlan, setSelectedPlan] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [showPaymentForm, setShowPaymentForm] = useState(false)
@@ -76,6 +26,27 @@ export default function PortalBillingPage() {
     method: 'bank_transfer',
     reference: ''
   })
+  
+  useEffect(() => {
+    const fetchTiers = async () => {
+      try {
+        const res = await publicAPI.getTiers()
+        const data = res.data?.tiers || res.data || []
+        setPlans(data.filter(t => t.code !== 'trial').map(t => ({
+          id: t.code,
+          name: t.name,
+          price: t.price_yearly,
+          description: t.description,
+          features: Array.isArray(t.features) ? t.features : [],
+        })))
+      } catch {
+        setPlans([])
+      } finally {
+        setIsLoadingPlans(false)
+      }
+    }
+    fetchTiers()
+  }, [])
   
   useEffect(() => {
     if (license?.tier) {
@@ -170,15 +141,20 @@ export default function PortalBillingPage() {
         
         {/* Pricing Plans */}
         {!showPaymentForm ? (
-          <div className="grid md:grid-cols-3 gap-6">
-            {plans.map((plan) => (
+          isLoadingPlans ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 text-libro-coral-500 animate-spin" />
+            </div>
+          ) : (
+          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+            {plans.map((plan, index) => (
               <div 
                 key={plan.id}
                 className={`card p-6 relative ${
-                  plan.popular ? 'ring-2 ring-libro-coral-500' : ''
+                  index === plans.length - 1 ? 'ring-2 ring-libro-coral-500' : ''
                 }`}
               >
-                {plan.popular && (
+                {index === plans.length - 1 && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                     <span className="bg-libro-coral-500 text-white px-3 py-1 rounded-full text-sm font-medium">
                       Most Popular
@@ -190,7 +166,7 @@ export default function PortalBillingPage() {
                   <h3 className="text-xl font-bold text-libro-warmgray-800">{plan.name}</h3>
                   <div className="mt-2">
                     <span className="text-3xl font-bold text-libro-warmgray-800">${plan.price}</span>
-                    <span className="text-libro-warmgray-500">/{plan.period}</span>
+                    <span className="text-libro-warmgray-500">/year</span>
                   </div>
                 </div>
                 
@@ -206,7 +182,7 @@ export default function PortalBillingPage() {
                 <button
                   onClick={() => handleSelectPlan(plan.id)}
                   className={`w-full py-2.5 rounded-xl font-medium transition-colors ${
-                    plan.popular
+                    index === plans.length - 1
                       ? 'bg-libro-coral-500 text-white hover:bg-libro-coral-600'
                       : 'bg-libro-warmgray-100 text-libro-warmgray-700 hover:bg-libro-warmgray-200'
                   }`}
@@ -216,6 +192,7 @@ export default function PortalBillingPage() {
               </div>
             ))}
           </div>
+          )
         ) : (
           /* Payment Form */
           <div className="card p-6 max-w-2xl mx-auto">

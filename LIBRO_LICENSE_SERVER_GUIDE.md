@@ -26,10 +26,10 @@ This guide provides complete specifications for building the license validation 
 │                    Libro Desktop App                            │
 │                      (Qt/QML + C++)                             │
 │                                                                 │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐         │
-│  │ AppManager  │───▶│   Network   │───▶│   HTTPS     │         │
-│  │  (Client)   │    │   Request   │    │   POST      │         │
-│  └─────────────┘    └─────────────┘    └─────────────┘         │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐          │
+│  │ AppManager  │───▶│   Network   │───▶│   HTTPS    │          |
+│  │  (Client)   │    │   Request   │    │   POST      │          │
+│  └─────────────┘    └─────────────┘    └─────────────┘          │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼

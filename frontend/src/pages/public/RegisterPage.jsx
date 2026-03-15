@@ -1,22 +1,23 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { BookOpen, ArrowLeft, Loader2, Check, Building2, Mail, User, Phone, MapPin, Lock } from 'lucide-react'
 import { publicAPI } from '../../api'
 import toast from 'react-hot-toast'
 
-const plans = {
-  starter: { name: 'Starter', price: 299 },
-  professional: { name: 'Professional', price: 799 },
-  enterprise: { name: 'Enterprise', price: 1999 },
+const defaultPlans = {
+  trial: { name: 'Free Trial', price: 0 },
+  basic: { name: 'Basic', price: 299 },
+  premium: { name: 'Premium', price: 799 },
 }
 
 export default function RegisterPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const selectedPlan = searchParams.get('plan') || 'professional'
+  const selectedPlan = searchParams.get('plan') || 'trial'
   
   const [step, setStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
+  const [plans, setPlans] = useState(defaultPlans)
   const [formData, setFormData] = useState({
     // Organization
     organization_name: '',
@@ -33,6 +34,25 @@ export default function RegisterPage() {
     accept_terms: false,
   })
   const [result, setResult] = useState(null)
+  
+  useEffect(() => {
+    const fetchTiers = async () => {
+      try {
+        const res = await publicAPI.getTiers()
+        const data = res.data?.tiers || res.data || []
+        const mapped = { trial: { name: 'Free Trial', price: 0 } }
+        data.forEach(t => {
+          if (t.code && t.code !== 'trial') {
+            mapped[t.code] = { name: t.name, price: t.price_yearly }
+          }
+        })
+        if (Object.keys(mapped).length > 1) setPlans(mapped)
+      } catch {
+        // keep defaults
+      }
+    }
+    fetchTiers()
+  }, [])
   
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -132,7 +152,7 @@ export default function RegisterPage() {
         
         <div>
           <h1 className="text-4xl font-bold text-white mb-4">
-            Start Your Free 30-Day Trial
+            Start Your Free 7-Day Trial
           </h1>
           <p className="text-xl text-white/80 mb-8">
             Get full access to Libro ILMS with no credit card required.
@@ -371,7 +391,7 @@ export default function RegisterPage() {
                 Choose Your Plan
               </h2>
               <p className="text-libro-warmgray-500 mb-6">
-                Start with a 30-day free trial
+                Start with a 7-day free trial
               </p>
               
               <div className="space-y-3 mb-6">
@@ -395,11 +415,13 @@ export default function RegisterPage() {
                       />
                       <div>
                         <p className="font-medium text-libro-warmgray-800">{plan.name}</p>
-                        <p className="text-sm text-libro-warmgray-500">30-day free trial</p>
+                        <p className="text-sm text-libro-warmgray-500">
+                          {key === 'trial' ? '7-day free trial' : '7-day trial, then payment required'}
+                        </p>
                       </div>
                     </div>
                     <p className="font-semibold text-libro-warmgray-800">
-                      ${plan.price}<span className="text-sm font-normal text-libro-warmgray-500">/year</span>
+                      {key === 'trial' ? 'Free' : <>${plan.price}<span className="text-sm font-normal text-libro-warmgray-500">/year</span></>}
                     </p>
                   </label>
                 ))}
@@ -410,7 +432,7 @@ export default function RegisterPage() {
                 <div className="text-sm space-y-1 text-libro-warmgray-600">
                   <p><strong>Organization:</strong> {formData.organization_name}</p>
                   <p><strong>Email:</strong> {formData.email}</p>
-                  <p><strong>Plan:</strong> {plans[formData.plan]?.name} (30-day trial)</p>
+                  <p><strong>Plan:</strong> {plans[formData.plan]?.name} (7-day trial)</p>
                 </div>
               </div>
               
@@ -451,7 +473,7 @@ export default function RegisterPage() {
                 Registration Complete!
               </h2>
               <p className="text-libro-warmgray-500 mb-8">
-                Your 30-day trial has started. Save your credentials below.
+                Your 7-day trial has started. Save your credentials below.
               </p>
               
               <div className="bg-libro-warmgray-50 rounded-xl p-6 text-left space-y-4 mb-6">

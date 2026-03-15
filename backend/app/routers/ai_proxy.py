@@ -1,5 +1,5 @@
 """
-AI Proxy router - proxies requests to Gemini API.
+AI Proxy router - proxies requests to Groq API.
 """
 from fastapi import APIRouter, HTTPException, status
 import httpx
@@ -12,47 +12,47 @@ router = APIRouter(prefix="/ai", tags=["AI"])
 @router.post("/chat", response_model=AIResponse)
 async def chat_with_ai(data: AIRequest):
     """
-    Proxy chat requests to Gemini API.
+    Proxy chat requests to Groq API.
     Called from Qt WebView AI page.
     No authentication required (AI page is embedded in desktop app).
     """
-    if not settings.GEMINI_API_KEY:
+    if not settings.GROQ_API_KEY:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="AI service not configured"
         )
     
-    # Create context for library management system
-    system_context = """You are Libro AI, an intelligent assistant for an Integrated Library Management System (ILMS).
-    You help users with library-related tasks including:
-    - Book search and recommendations
-    - Library policies and procedures
-    - Account information and services
-    - Reservation and checkout processes
-    - Library hours and contact information
-    - General library system navigation
+    # Create system message for library management system
+    system_message = """You are Libro AI, an intelligent assistant for an Integrated Library Management System (ILMS).
+You help users with library-related tasks including:
+- Book search and recommendations
+- Library policies and procedures
+- Account information and services
+- Reservation and checkout processes
+- Library hours and contact information
+- General library system navigation
 
-    Be helpful, professional, and knowledgeable about library operations.
-    Provide clear, concise answers and ask for clarification when needed.
-
-    User message: """ + data.message
+Be helpful, professional, and knowledgeable about library operations.
+Provide clear, concise answers and ask for clarification when needed."""
     
     request_body = {
-        "contents": [{
-            "parts": [{
-                "text": system_context
-            }]
-        }]
+        "model": settings.GROQ_MODEL,
+        "messages": [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": data.message}
+        ],
+        "temperature": 0.7,
+        "max_tokens": 2048
     }
     
     try:
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(
-                settings.GEMINI_API_URL,
+                settings.GROQ_API_URL,
                 json=request_body,
                 headers={
                     "Content-Type": "application/json",
-                    "x-goog-api-key": settings.GEMINI_API_KEY
+                    "Authorization": f"Bearer {settings.GROQ_API_KEY}"
                 }
             )
             
@@ -71,7 +71,7 @@ async def chat_with_ai(data: AIRequest):
                 )
             
             result = response.json()
-            ai_response = result["candidates"][0]["content"]["parts"][0]["text"]
+            ai_response = result["choices"][0]["message"]["content"]
             
             return AIResponse(
                 success=True,

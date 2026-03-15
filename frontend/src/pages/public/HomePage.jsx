@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { publicAPI } from '../../api'
 import { 
   BookOpen, 
   Shield, 
@@ -9,7 +11,8 @@ import {
   Check,
   ArrowRight,
   Sparkles,
-  Download
+  Download,
+  Loader2
 } from 'lucide-react'
 
 const features = [
@@ -45,59 +48,24 @@ const features = [
   },
 ]
 
-const tiers = [
-  {
-    name: 'Starter',
-    price: 299,
-    period: 'year',
-    description: 'Perfect for small libraries',
-    features: [
-      'Up to 5 users',
-      '10,000 catalog records',
-      'Basic circulation',
-      'Standard reports',
-      'Email support',
-    ],
-    cta: 'Start Free Trial',
-    href: '/register?plan=starter',
-  },
-  {
-    name: 'Professional',
-    price: 799,
-    period: 'year',
-    description: 'For growing libraries',
-    features: [
-      'Up to 25 users',
-      '100,000 catalog records',
-      'Full circulation suite',
-      'Acquisitions module',
-      'Advanced reports',
-      'Priority support',
-    ],
-    cta: 'Start Free Trial',
-    href: '/register?plan=professional',
-    popular: true,
-  },
-  {
-    name: 'Enterprise',
-    price: 1999,
-    period: 'year',
-    description: 'For large institutions',
-    features: [
-      'Unlimited users',
-      'Unlimited records',
-      'All modules included',
-      'Multi-branch support',
-      'API access',
-      'Dedicated support',
-      'Custom training',
-    ],
-    cta: 'Contact Sales',
-    href: '/register?plan=enterprise',
-  },
-]
-
 export default function HomePage() {
+  const [tiers, setTiers] = useState([])
+  const [isLoadingTiers, setIsLoadingTiers] = useState(true)
+  
+  useEffect(() => {
+    const fetchTiers = async () => {
+      try {
+        const response = await publicAPI.getTiers()
+        // Filter out trial tier for pricing display
+        setTiers(response.data.filter(t => t.code !== 'trial'))
+      } catch (error) {
+        console.error('Failed to load tiers')
+      } finally {
+        setIsLoadingTiers(false)
+      }
+    }
+    fetchTiers()
+  }, [])
   return (
     <div className="min-h-screen bg-libro-cream-50">
       {/* Navigation */}
@@ -149,7 +117,7 @@ export default function HomePage() {
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link to="/register" className="btn-primary text-lg px-8 py-3 flex items-center gap-2">
-              Start 30-Day Free Trial
+              Start 7-Day Free Trial
               <ArrowRight className="w-5 h-5" />
             </Link>
             <Link to="/download" className="btn-secondary text-lg px-8 py-3 flex items-center gap-2">
@@ -159,7 +127,7 @@ export default function HomePage() {
           </div>
           
           <p className="text-sm text-libro-warmgray-500 mt-4">
-            No credit card required • Full access for 30 days
+            No credit card required • Full access for 7 days
           </p>
         </div>
       </section>
@@ -198,66 +166,72 @@ export default function HomePage() {
               Simple, Transparent Pricing
             </h2>
             <p className="text-lg text-libro-warmgray-600 max-w-2xl mx-auto">
-              Choose the plan that fits your library. All plans include a 30-day free trial.
+              Choose the plan that fits your library. All plans include a 7-day free trial.
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {tiers.map((tier) => (
+          {isLoadingTiers ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 text-libro-coral-500 animate-spin" />
+            </div>
+          ) : (
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {tiers.map((tier, index) => (
               <div 
-                key={tier.name}
+                key={tier.id}
                 className={`relative rounded-2xl p-8 ${
-                  tier.popular 
+                  index === tiers.length - 1 
                     ? 'bg-libro-coral-500 text-white shadow-xl scale-105' 
                     : 'bg-white shadow-lg'
                 }`}
               >
-                {tier.popular && (
+                {index === tiers.length - 1 && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-libro-warmgray-800 text-white text-sm font-medium rounded-full">
                     Most Popular
                   </div>
                 )}
                 
-                <h3 className={`text-xl font-semibold mb-2 ${tier.popular ? 'text-white' : 'text-libro-warmgray-800'}`}>
+                <h3 className={`text-xl font-semibold mb-2 ${index === tiers.length - 1 ? 'text-white' : 'text-libro-warmgray-800'}`}>
                   {tier.name}
                 </h3>
-                <p className={`text-sm mb-4 ${tier.popular ? 'text-white/80' : 'text-libro-warmgray-500'}`}>
+                <p className={`text-sm mb-4 ${index === tiers.length - 1 ? 'text-white/80' : 'text-libro-warmgray-500'}`}>
                   {tier.description}
                 </p>
                 
                 <div className="mb-6">
-                  <span className={`text-4xl font-bold ${tier.popular ? 'text-white' : 'text-libro-warmgray-800'}`}>
-                    ${tier.price}
+                  <span className={`text-4xl font-bold ${index === tiers.length - 1 ? 'text-white' : 'text-libro-warmgray-800'}`}>
+                    ${tier.price_yearly}
                   </span>
-                  <span className={tier.popular ? 'text-white/80' : 'text-libro-warmgray-500'}>
-                    /{tier.period}
+                  <span className={index === tiers.length - 1 ? 'text-white/80' : 'text-libro-warmgray-500'}>
+                    /year
                   </span>
                 </div>
                 
                 <ul className="space-y-3 mb-8">
-                  {tier.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-2">
-                      <Check className={`w-5 h-5 ${tier.popular ? 'text-white' : 'text-libro-green-500'}`} />
-                      <span className={tier.popular ? 'text-white/90' : 'text-libro-warmgray-600'}>
-                        {feature}
+                  {(Array.isArray(tier.features) ? tier.features : []).map((feature, fIdx) => (
+                    <li key={fIdx} className="flex items-center gap-2">
+                      <Check className={`w-5 h-5 ${index === tiers.length - 1 ? 'text-white' : 'text-libro-green-500'}`} />
+                      <span className={index === tiers.length - 1 ? 'text-white/90' : 'text-libro-warmgray-600'}>
+                        {typeof feature === 'string' ? feature : feature}
                       </span>
                     </li>
                   ))}
                 </ul>
                 
                 <Link 
-                  to={tier.href}
+                  to={`/register?plan=${tier.code}`}
                   className={`block w-full py-3 rounded-xl font-medium text-center transition-colors ${
-                    tier.popular
+                    index === tiers.length - 1
                       ? 'bg-white text-libro-coral-500 hover:bg-libro-cream-50'
                       : 'bg-libro-coral-500 text-white hover:bg-libro-coral-600'
                   }`}
                 >
-                  {tier.cta}
+                  Start Free Trial
                 </Link>
               </div>
             ))}
           </div>
+          )}
         </div>
       </section>
       

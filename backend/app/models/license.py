@@ -22,7 +22,7 @@ class License(Base):
     is_revoked = Column(Boolean, default=False)
     is_trial = Column(Boolean, default=False)
     revoked_reason = Column(Text)
-    max_activations = Column(Integer, default=3)
+    max_activations = Column(Integer, default=1)
     activation_count = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

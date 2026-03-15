@@ -1,82 +1,12 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { BookOpen, Check, ArrowLeft, HelpCircle } from 'lucide-react'
-
-const tiers = [
-  {
-    id: 'starter',
-    name: 'Starter',
-    description: 'Perfect for small libraries',
-    price: 299,
-    period: 'year',
-    features: [
-      'Up to 10,000 catalog items',
-      '3 staff accounts',
-      'Basic cataloging (MARC21)',
-      'Circulation management',
-      'Patron registration',
-      'Fine tracking',
-      'Basic reports',
-      'Email support',
-    ],
-    limitations: [
-      'No multi-branch support',
-      'Limited API access',
-    ],
-    cta: 'Start Free Trial',
-    highlighted: false,
-  },
-  {
-    id: 'professional',
-    name: 'Professional',
-    description: 'For growing libraries',
-    price: 799,
-    period: 'year',
-    features: [
-      'Up to 100,000 catalog items',
-      '10 staff accounts',
-      'Advanced cataloging',
-      'Z39.50 copy cataloging',
-      'MARC import/export',
-      'Advanced circulation rules',
-      'Custom reports builder',
-      'Email notifications',
-      'Priority support',
-      'Basic API access',
-    ],
-    limitations: [],
-    cta: 'Start Free Trial',
-    highlighted: true,
-    badge: 'Most Popular',
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    description: 'For large library networks',
-    price: 1999,
-    period: 'year',
-    features: [
-      'Unlimited catalog items',
-      'Unlimited staff accounts',
-      'Multi-branch support',
-      'Full API access',
-      'Custom integrations',
-      'SSO/LDAP support',
-      'White-label options',
-      'On-site training',
-      'Dedicated account manager',
-      '24/7 phone support',
-      'SLA guarantee',
-    ],
-    limitations: [],
-    cta: 'Contact Sales',
-    highlighted: false,
-  },
-]
+import { BookOpen, Check, ArrowLeft, HelpCircle, Loader2 } from 'lucide-react'
+import { publicAPI } from '../../api'
 
 const faqs = [
   {
     question: 'How long is the free trial?',
-    answer: 'All plans include a 30-day free trial with full access to all features. No credit card required to start.',
+    answer: 'All plans include a 7-day free trial with full access to all features. No credit card required to start.',
   },
   {
     question: 'Can I upgrade or downgrade my plan?',
@@ -101,6 +31,24 @@ const faqs = [
 ]
 
 export default function PricingPage() {
+  const [tiers, setTiers] = useState([])
+  const [isLoadingTiers, setIsLoadingTiers] = useState(true)
+
+  useEffect(() => {
+    const fetchTiers = async () => {
+      try {
+        const res = await publicAPI.getTiers()
+        const data = res.data?.tiers || res.data || []
+        setTiers(data.filter(t => t.code !== 'trial'))
+      } catch {
+        setTiers([])
+      } finally {
+        setIsLoadingTiers(false)
+      }
+    }
+    fetchTiers()
+  }, [])
+
   return (
     <div className="min-h-screen bg-libro-cream-50">
       {/* Header */}
@@ -131,7 +79,7 @@ export default function PricingPage() {
             Simple, Transparent Pricing
           </h1>
           <p className="text-xl text-libro-warmgray-600 mb-8">
-            Choose the plan that fits your library. All plans include a 30-day free trial.
+            Choose the plan that fits your library. All plans include a 7-day free trial.
           </p>
           <div className="inline-flex items-center gap-2 bg-libro-green-100 text-libro-green-700 px-4 py-2 rounded-full text-sm font-medium">
             <Check className="w-4 h-4" />
@@ -143,17 +91,22 @@ export default function PricingPage() {
       {/* Pricing Cards */}
       <section className="pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-3 gap-8">
-            {tiers.map((tier) => (
+          {isLoadingTiers ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 text-libro-coral-500 animate-spin" />
+            </div>
+          ) : (
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {tiers.map((tier, index) => (
               <div
                 key={tier.id}
                 className={`relative bg-white rounded-2xl shadow-lg overflow-hidden ${
-                  tier.highlighted ? 'ring-2 ring-libro-coral-500' : ''
+                  index === tiers.length - 1 ? 'ring-2 ring-libro-coral-500' : ''
                 }`}
               >
-                {tier.badge && (
+                {index === tiers.length - 1 && (
                   <div className="absolute top-0 right-0 bg-libro-coral-500 text-white px-4 py-1 text-sm font-medium rounded-bl-xl">
-                    {tier.badge}
+                    Most Popular
                   </div>
                 )}
                 
@@ -162,50 +115,37 @@ export default function PricingPage() {
                   <p className="text-libro-warmgray-500 text-sm mt-1">{tier.description}</p>
                   
                   <div className="mt-6">
-                    <span className="text-4xl font-bold text-libro-warmgray-800">${tier.price}</span>
-                    <span className="text-libro-warmgray-500">/{tier.period}</span>
+                    <span className="text-4xl font-bold text-libro-warmgray-800">${tier.price_yearly}</span>
+                    <span className="text-libro-warmgray-500">/year</span>
                   </div>
                   
                   <Link
-                    to={`/register?plan=${tier.id}`}
+                    to={`/register?plan=${tier.code}`}
                     className={`block w-full text-center py-3 rounded-xl font-medium mt-6 transition-colors ${
-                      tier.highlighted
+                      index === tiers.length - 1
                         ? 'bg-libro-coral-500 text-white hover:bg-libro-coral-600'
                         : 'bg-libro-warmgray-100 text-libro-warmgray-700 hover:bg-libro-warmgray-200'
                     }`}
                   >
-                    {tier.cta}
+                    Start Free Trial
                   </Link>
                 </div>
                 
                 <div className="px-8 pb-8">
                   <p className="text-sm font-medium text-libro-warmgray-800 mb-4">What's included:</p>
                   <ul className="space-y-3">
-                    {tier.features.map((feature, idx) => (
+                    {(Array.isArray(tier.features) ? tier.features : []).map((feature, idx) => (
                       <li key={idx} className="flex items-start gap-2 text-sm text-libro-warmgray-600">
                         <Check className="w-4 h-4 text-libro-green-500 mt-0.5 flex-shrink-0" />
                         <span>{feature}</span>
                       </li>
                     ))}
                   </ul>
-                  
-                  {tier.limitations.length > 0 && (
-                    <>
-                      <p className="text-sm font-medium text-libro-warmgray-800 mt-6 mb-4">Limitations:</p>
-                      <ul className="space-y-2">
-                        {tier.limitations.map((limitation, idx) => (
-                          <li key={idx} className="flex items-start gap-2 text-sm text-libro-warmgray-500">
-                            <span className="w-4 h-4 flex items-center justify-center flex-shrink-0">–</span>
-                            <span>{limitation}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
                 </div>
               </div>
             ))}
           </div>
+          )}
         </div>
       </section>
       
@@ -221,47 +161,33 @@ export default function PricingPage() {
               <thead>
                 <tr className="border-b border-libro-warmgray-200">
                   <th className="py-4 px-4 text-left text-libro-warmgray-800">Feature</th>
-                  <th className="py-4 px-4 text-center text-libro-warmgray-800">Starter</th>
-                  <th className="py-4 px-4 text-center text-libro-warmgray-800">Professional</th>
-                  <th className="py-4 px-4 text-center text-libro-warmgray-800">Enterprise</th>
+                  {tiers.map((tier) => (
+                    <th key={tier.id} className="py-4 px-4 text-center text-libro-warmgray-800">{tier.name}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="text-sm">
                 {[
-                  ['Catalog Items', '10,000', '100,000', 'Unlimited'],
-                  ['Staff Accounts', '3', '10', 'Unlimited'],
-                  ['MARC21 Support', true, true, true],
-                  ['Z39.50 Copy Cataloging', false, true, true],
-                  ['Multi-branch Support', false, false, true],
-                  ['API Access', 'Limited', 'Basic', 'Full'],
-                  ['Custom Reports', false, true, true],
-                  ['Email Notifications', false, true, true],
-                  ['SSO/LDAP', false, false, true],
-                  ['Support', 'Email', 'Priority', '24/7 Phone'],
-                ].map(([feature, starter, pro, enterprise], idx) => (
+                  ['Catalog Items', '10,000', 'Unlimited'],
+                  ['Staff Accounts', '3', 'Unlimited'],
+                  ['MARC21 Support', true, true],
+                  ['Z39.50 Copy Cataloging', false, true],
+                  ['API Access', 'Limited', 'Full'],
+                  ['Custom Reports', false, true],
+                  ['Email Notifications', true, true],
+                  ['Priority Support', false, true],
+                ].map(([feature, ...values], idx) => (
                   <tr key={idx} className="border-b border-libro-warmgray-100">
                     <td className="py-3 px-4 text-libro-warmgray-700">{feature}</td>
-                    <td className="py-3 px-4 text-center">
-                      {typeof starter === 'boolean' ? (
-                        starter ? <Check className="w-4 h-4 text-libro-green-500 mx-auto" /> : <span className="text-libro-warmgray-300">–</span>
-                      ) : (
-                        <span className="text-libro-warmgray-600">{starter}</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-center bg-libro-coral-50">
-                      {typeof pro === 'boolean' ? (
-                        pro ? <Check className="w-4 h-4 text-libro-green-500 mx-auto" /> : <span className="text-libro-warmgray-300">–</span>
-                      ) : (
-                        <span className="text-libro-warmgray-600">{pro}</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      {typeof enterprise === 'boolean' ? (
-                        enterprise ? <Check className="w-4 h-4 text-libro-green-500 mx-auto" /> : <span className="text-libro-warmgray-300">–</span>
-                      ) : (
-                        <span className="text-libro-warmgray-600">{enterprise}</span>
-                      )}
-                    </td>
+                    {values.slice(0, tiers.length).map((val, vIdx) => (
+                      <td key={vIdx} className={`py-3 px-4 text-center ${vIdx === tiers.length - 1 ? 'bg-libro-coral-50' : ''}`}>
+                        {typeof val === 'boolean' ? (
+                          val ? <Check className="w-4 h-4 text-libro-green-500 mx-auto" /> : <span className="text-libro-warmgray-300">–</span>
+                        ) : (
+                          <span className="text-libro-warmgray-600">{val}</span>
+                        )}
+                      </td>
+                    ))}
                   </tr>
                 ))}
               </tbody>
@@ -300,7 +226,7 @@ export default function PricingPage() {
             Ready to Transform Your Library?
           </h2>
           <p className="text-white/80 mb-8">
-            Start your 30-day free trial today. No credit card required.
+            Start your 7-day free trial today. No credit card required.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link to="/register" className="bg-white text-libro-coral-500 hover:bg-libro-cream-50 px-8 py-3 rounded-xl font-medium transition-colors">
