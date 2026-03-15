@@ -245,6 +245,15 @@ payload["app_version"] = APP_VERSION;
 
 Proprietary - Libro ILMS
 
+## 🤝 Contributing & Local Development
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for a step-by-step guide on:
+- Cloning the repository
+- **Pulling the latest changes from GitHub into VS Code**
+- Updating dependencies after a pull
+- Running the project locally
+- Troubleshooting common issues
+
 ## 🤝 Support
 
 For support, contact the Libro development team.
