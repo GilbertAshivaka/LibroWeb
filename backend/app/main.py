@@ -63,7 +63,10 @@ async def lifespan(app: FastAPI):
                     max_books=None,
                     monthly_price=0.00,
                     annual_price=0.00,
-                    features={"all_features": True, "support": "email"}
+                    features=[
+                        "Full feature access",
+                        "Email support",
+                    ]
                 ),
                 SubscriptionTier(
                     tier_code="basic",
@@ -73,13 +76,13 @@ async def lifespan(app: FastAPI):
                     max_books=10000,
                     monthly_price=29.99,
                     annual_price=299.99,
-                    features={
-                        "circulation": True,
-                        "catalog": True,
-                        "reports_basic": True,
-                        "opac": True,
-                        "support": "email"
-                    }
+                    features=[
+                        "Catalog management",
+                        "Circulation",
+                        "Basic reports",
+                        "OPAC",
+                        "Email support",
+                    ]
                 ),
                 SubscriptionTier(
                     tier_code="premium",
@@ -89,15 +92,15 @@ async def lifespan(app: FastAPI):
                     max_books=None,
                     monthly_price=79.99,
                     annual_price=799.99,
-                    features={
-                        "circulation": True,
-                        "catalog": True,
-                        "reports_advanced": True,
-                        "opac": True,
-                        "email_notifications": True,
-                        "api_access": True,
-                        "support": "priority"
-                    }
+                    features=[
+                        "Catalog management",
+                        "Circulation",
+                        "Advanced reports",
+                        "OPAC",
+                        "Email notifications",
+                        "API access",
+                        "Priority support",
+                    ]
                 ),
             ]
             for tier in tiers:

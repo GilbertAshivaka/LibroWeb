@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Any, Optional
 import uuid
 import secrets
 from datetime import datetime, timedelta
@@ -61,6 +61,24 @@ class TierResponse(BaseModel):
     price_monthly: Optional[float]
     price_yearly: Optional[float]
     features: Optional[list] = None
+
+
+def _normalize_features(features: Any) -> Optional[list]:
+    """Normalize tier features to a list of strings for the public API response.
+
+    Handles backwards compatibility with legacy dict-format features stored as
+    ``{"feature_name": True/False, ...}``, converting them to a list of the
+    enabled feature keys.  New tiers should store features as a plain list of
+    human-readable strings.
+    """
+    if features is None:
+        return None
+    if isinstance(features, list):
+        return features
+    if isinstance(features, dict):
+        # Convert dict of {feature_name: bool/value} to a list of enabled feature keys
+        return [k for k, v in features.items() if v]
+    return None
 
 
 @router.post("/register", response_model=RegistrationResponse)
@@ -232,7 +250,7 @@ async def get_public_tiers(db: AsyncSession = Depends(get_db)):
             max_users=t.max_users,
             price_monthly=float(t.monthly_price) if t.monthly_price else None,
             price_yearly=float(t.annual_price) if t.annual_price else None,
-            features=t.features
+            features=_normalize_features(t.features)
         )
         for t in tiers
     ]
